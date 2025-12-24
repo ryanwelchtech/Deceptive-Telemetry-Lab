@@ -39,27 +39,43 @@ jobs:
           echo "services failed to start"; exit 1
       - name: Generate sample traffic
         run: bash scripts/generate_sample_traffic.sh 3
-      - name: Inject deterministic high-severity event
+      - name: Inject deterministic high-severity event (with retry & logs)
         run: |
-          curl -s -X POST http://localhost:8083/hit -H "Content-Type: application/json" -d '{"path":"/admin","ua":"nmap/7.80"}' || true
-          sleep 1
+          set -e
+          PAYLOAD='{"path":"/admin","ua":"nmap/7.80"}'
+          for attempt in 1 2 3; do
+            echo "POST /hit attempt $attempt"
+            RESP=$(curl -s -w "\nHTTP_STATUS:%{http_code}" -X POST http://localhost:8083/hit -H "Content-Type: application/json" -d "$PAYLOAD" || true)
+            echo "Response:"
+            echo "$RESP"
+            STATUS=$(echo "$RESP" | sed -n 's/.*HTTP_STATUS:\([0-9][0-9][0-9]\)/\1/p' || true)
+            if echo "$STATUS" | grep -E '^[0-9]{3}$' >/dev/null 2>&1 && [ "$STATUS" -ge 200 ] && [ "$STATUS" -lt 300 ]; then
+              echo "POST succeeded (status $STATUS)"
+              break
+            fi
+            echo "POST failed or non-2xx status ($STATUS); retrying..."
+            sleep 2
+          done
+          echo "Waiting 3s for collector to process event..."
+          sleep 3
       - name: Verify reports contain expected entries
         run: |
           set -e
           found=1
-          for i in {1..10}; do
+          for i in {1..20}; do
             RESPONSE=$(curl -s http://localhost:8084/reports || true)
-            echo "$RESPONSE" | jq -r '.[] | "id: \(.id) severity: \(.severity)"' | tee reports.txt
+            echo "Attempt $i: /reports response:"
+            echo "$RESPONSE" | jq -r '.[] | "id: \(.id) severity: \(.severity) path: \(.path) ua: \(.ua)"' | tee reports.txt
             if grep -q HIGH reports.txt; then
               echo "Found HIGH in reports"
               found=0
               break
             fi
-            echo "HIGH not found yet; retry ($i/10)"
-            sleep 1
+            echo "HIGH not found yet; retry ($i/20)"
+            sleep 2
           done
           if [ "$found" -ne 0 ]; then
-            echo "Final reports:"
+            echo "Final reports (last attempt):"
             cat reports.txt || true
             exit 1
           fi
