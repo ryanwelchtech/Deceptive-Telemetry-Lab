@@ -23,12 +23,24 @@ app.post('/hit', async(req, res) => {
     fs.appendFileSync('artifacts/honeypot_events.log', JSON.stringify(event) + '\n');
 
     let forwardErr = null;
-    try {
-        await axios.post(collectorUrl, event, { timeout: 2000 });
-    } catch (err) {
-        forwardErr = err;
-        // record forwarding error for diagnostics
-        fs.appendFileSync('artifacts/honeypot_forward_errors.log', new Date().toISOString() + ' ' + (err && err.toString()) + '\n');
+    const maxAttempts = 3;
+    const initialDelayMs = 200;
+    const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
+
+    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+        try {
+            await axios.post(collectorUrl, event, { timeout: 2000 });
+            forwardErr = null;
+            break;
+        } catch (err) {
+            forwardErr = err;
+            const msg = `${new Date().toISOString()} attempt=${attempt} error=${err && err.toString()}\n`;
+            fs.appendFileSync('artifacts/honeypot_forward_errors.log', msg);
+            if (attempt < maxAttempts) {
+                const delay = initialDelayMs * Math.pow(2, attempt - 1);
+                await sleep(delay);
+            }
+        }
     }
 
     // If forwarding failed, return 502 so callers (tests/CI) can detect and retry

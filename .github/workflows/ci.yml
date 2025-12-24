@@ -49,12 +49,13 @@ jobs:
           PAYLOAD='{"path":"/admin","ua":"nmap/7.80"}'
           # initialize injector log
           echo "" > injector_logs.txt
+          echo "curl binary: $(which curl || echo '(curl not found)')" | tee -a injector_logs.txt
           for attempt in 1 2 3; do
             echo "POST /hit attempt $attempt" | tee -a injector_logs.txt
             echo "Health check (before POST):" | tee -a injector_logs.txt
             curl -sS -I http://localhost:8083/health 2>&1 | sed -n '1,8p' | tee -a injector_logs.txt || true
-            # POST with verbose output; capture stderr to file for diagnostics
-            RESP=$(curl -s -w "\nHTTP_STATUS:%{http_code}" -v -X POST http://localhost:8083/hit -H "Content-Type: application/json" -d "$PAYLOAD" 2>curl_err.txt || true)
+            # POST with retries via curl; capture stderr to file for diagnostics
+            RESP=$(curl --fail --retry 3 --retry-delay 2 -s -w "\nHTTP_STATUS:%{http_code}" -v -X POST http://localhost:8083/hit -H "Content-Type: application/json" -d "$PAYLOAD" 2>curl_err.txt || true)
             echo "Response:" | tee -a injector_logs.txt
             echo "$RESP" | tee -a injector_logs.txt
             echo "Curl stderr:" | tee -a injector_logs.txt
@@ -74,9 +75,11 @@ jobs:
           set -e
           found=1
           for i in {1..20}; do
-            RESPONSE=$(curl -s http://localhost:8084/reports || true)
-            echo "Attempt $i: /reports response:"
-            echo "$RESPONSE" | jq -r '.[] | "id: \(.id) severity: \(.severity) path: \(.path) ua: \(.ua)"' | tee reports.txt
+            echo "Attempt $i: /reports (raw headers + body):"
+            curl -sS -D - http://localhost:8084/reports -o reports_body.txt 2>&1 | sed -n '1,40p' | tee reports_raw_$i.txt || true
+            echo "=== parsed body ==="
+            cat reports_body.txt | jq -r '.[] | "id: \(.id) severity: \(.severity) path: \(.path) ua: \(.ua)"' | tee reports.txt || true
+            RESPONSE=$(cat reports_body.txt || true)
             # Check specifically for the injected event (path "/admin", ua contains "nmap", severity "HIGH")
             if echo "$RESPONSE" | jq -e '.[] | select(.path=="/admin" and (.ua|test("nmap"; "i")) and .severity=="HIGH")' >/dev/null 2>&1; then
               echo "Found expected injected HIGH event (path=/admin, ua~nmap)"
@@ -89,6 +92,7 @@ jobs:
           if [ "$found" -ne 0 ]; then
             echo "Final reports (last attempt):"
             cat reports.txt || true
+            ls -la reports_raw_*.txt || true
             exit 1
           fi
       - name: Print smoke-test diagnostics (reports + injector logs)
@@ -114,6 +118,7 @@ jobs:
           path: |
             reports.txt
             injector_logs.txt
+            reports_raw_*.txt
       - name: Tear down
         if: always()
         run: docker compose down -v
