@@ -1,0 +1,35 @@
+name: Create Release & Announce
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+jobs:
+  create-release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Create GitHub Release
+        id: create_release
+        uses: actions/create-release@v1
+        with:
+          tag_name: ${{ github.ref_name }}
+          release_name: Release ${{ github.ref_name }}
+          body: |
+            Automated release for ${{ github.ref_name }}
+            - Repository: ${{ github.repository }}
+            - Commit: ${{ github.sha }}
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Trigger n8n webhook (optional)
+        if: ${{ secrets.N8N_WEBHOOK_URL != '' }}
+        run: |
+          echo "Calling n8n webhook at ${{ secrets.N8N_WEBHOOK_URL }}"
+          curl -s -X POST -H "Content-Type: application/json" \
+            -d '{"project_name":"${{ github.repository }}","title":"Release ${{ github.ref_name }}","post_text":"Released ${{ github.ref_name }} - https://github.com/${{ github.repository }}"}' \
+            "${{ secrets.N8N_WEBHOOK_URL }}"
