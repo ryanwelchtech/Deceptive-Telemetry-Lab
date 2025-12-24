@@ -45,9 +45,24 @@ jobs:
           sleep 1
       - name: Verify reports contain expected entries
         run: |
-          RESPONSE=$(curl -s http://localhost:8084/reports || true)
-          echo "$RESPONSE" | jq -r '.[] | "id: \(.id) severity: \(.severity)"' | tee reports.txt
-          grep -q HIGH reports.txt
+          set -e
+          found=1
+          for i in {1..10}; do
+            RESPONSE=$(curl -s http://localhost:8084/reports || true)
+            echo "$RESPONSE" | jq -r '.[] | "id: \(.id) severity: \(.severity)"' | tee reports.txt
+            if grep -q HIGH reports.txt; then
+              echo "Found HIGH in reports"
+              found=0
+              break
+            fi
+            echo "HIGH not found yet; retry ($i/10)"
+            sleep 1
+          done
+          if [ "$found" -ne 0 ]; then
+            echo "Final reports:"
+            cat reports.txt || true
+            exit 1
+          fi
       - name: Tear down
         if: always()
         run: docker compose down -v
