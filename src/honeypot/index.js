@@ -22,10 +22,18 @@ app.post('/hit', async(req, res) => {
     // write local copy
     fs.appendFileSync('artifacts/honeypot_events.log', JSON.stringify(event) + '\n');
 
+    let forwardErr = null;
     try {
         await axios.post(collectorUrl, event, { timeout: 2000 });
     } catch (err) {
-        // Collector may be down in dev, ignore
+        forwardErr = err;
+        // record forwarding error for diagnostics
+        fs.appendFileSync('artifacts/honeypot_forward_errors.log', new Date().toISOString() + ' ' + (err && err.toString()) + '\n');
+    }
+
+    // If forwarding failed, return 502 so callers (tests/CI) can detect and retry
+    if (forwardErr) {
+        return res.status(502).json({ status: 'recorded', event, forward: 'failed', error: String(forwardErr) });
     }
 
     res.json({ status: 'recorded', event });

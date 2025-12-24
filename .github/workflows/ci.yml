@@ -37,6 +37,10 @@ jobs:
             echo "waiting... ($i)"; sleep 2
           done
           echo "services failed to start"; exit 1
+      - name: Show service status & recent logs
+        run: |
+          docker compose ps
+          docker compose logs --tail=200 --no-color
       - name: Generate sample traffic
         run: bash scripts/generate_sample_traffic.sh 3
       - name: Inject deterministic high-severity event (with retry & logs)
@@ -47,9 +51,14 @@ jobs:
           echo "" > injector_logs.txt
           for attempt in 1 2 3; do
             echo "POST /hit attempt $attempt" | tee -a injector_logs.txt
-            RESP=$(curl -s -w "\nHTTP_STATUS:%{http_code}" -X POST http://localhost:8083/hit -H "Content-Type: application/json" -d "$PAYLOAD" || true)
+            echo "Health check (before POST):" | tee -a injector_logs.txt
+            curl -sS -I http://localhost:8083/health 2>&1 | sed -n '1,8p' | tee -a injector_logs.txt || true
+            # POST with verbose output; capture stderr to file for diagnostics
+            RESP=$(curl -s -w "\nHTTP_STATUS:%{http_code}" -v -X POST http://localhost:8083/hit -H "Content-Type: application/json" -d "$PAYLOAD" 2>curl_err.txt || true)
             echo "Response:" | tee -a injector_logs.txt
             echo "$RESP" | tee -a injector_logs.txt
+            echo "Curl stderr:" | tee -a injector_logs.txt
+            cat curl_err.txt | tee -a injector_logs.txt || true
             STATUS=$(echo "$RESP" | sed -n 's/.*HTTP_STATUS:\([0-9][0-9][0-9]\)/\1/p' || true)
             if echo "$STATUS" | grep -E '^[0-9]{3}$' >/dev/null 2>&1 && [ "$STATUS" -ge 200 ] && [ "$STATUS" -lt 300 ]; then
               echo "POST succeeded (status $STATUS)" | tee -a injector_logs.txt
