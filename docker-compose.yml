@@ -21,16 +21,3 @@ services:
       - "8084:8084"
     volumes:
       - ./artifacts:/app/artifacts
-
-  n8n:
-    image: n8nio/n8n:latest
-    container_name: detel_n8n
-    ports:
-      - "15678:5678" # changed host port to avoid conflicts
-    volumes:
-      - ./automation/n8n_data:/home/node/.n8n
-    environment:
-      - N8N_BASIC_AUTH_ACTIVE=true
-      - N8N_BASIC_AUTH_USER=ryanwelch
-      - N8N_BASIC_AUTH_PASSWORD=password123
-    restart: always

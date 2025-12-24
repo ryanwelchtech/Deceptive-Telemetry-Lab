@@ -5,7 +5,7 @@ A compact, portfolio-ready demo that simulates deceptive telemetry (honeypot) co
 Highlights:
 - Lightweight honeypot simulator that emits and records suspicious telemetry (`src/honeypot`)
 - Central collector that ingests events, applies deterministic detection rules, and produces audit-ready reports (`src/collector`)
-- Docker Compose environment to run services and an `n8n` automation instance locally
+- Docker Compose environment to run services locally
 - CI pipeline with Trivy security gating; artifacts and SBOM examples are generated
 - `templates/bootstrap_repo.ps1` helps generate a local `scripts/bootstrap_repo.ps1` (which should be added to `.gitignore` for local workflow)
 
