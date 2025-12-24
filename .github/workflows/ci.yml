@@ -43,20 +43,22 @@ jobs:
         run: |
           set -e
           PAYLOAD='{"path":"/admin","ua":"nmap/7.80"}'
+          # initialize injector log
+          echo "" > injector_logs.txt
           for attempt in 1 2 3; do
-            echo "POST /hit attempt $attempt"
+            echo "POST /hit attempt $attempt" | tee -a injector_logs.txt
             RESP=$(curl -s -w "\nHTTP_STATUS:%{http_code}" -X POST http://localhost:8083/hit -H "Content-Type: application/json" -d "$PAYLOAD" || true)
-            echo "Response:"
-            echo "$RESP"
+            echo "Response:" | tee -a injector_logs.txt
+            echo "$RESP" | tee -a injector_logs.txt
             STATUS=$(echo "$RESP" | sed -n 's/.*HTTP_STATUS:\([0-9][0-9][0-9]\)/\1/p' || true)
             if echo "$STATUS" | grep -E '^[0-9]{3}$' >/dev/null 2>&1 && [ "$STATUS" -ge 200 ] && [ "$STATUS" -lt 300 ]; then
-              echo "POST succeeded (status $STATUS)"
+              echo "POST succeeded (status $STATUS)" | tee -a injector_logs.txt
               break
             fi
-            echo "POST failed or non-2xx status ($STATUS); retrying..."
+            echo "POST failed or non-2xx status ($STATUS); retrying..." | tee -a injector_logs.txt
             sleep 2
           done
-          echo "Waiting 3s for collector to process event..."
+          echo "Waiting 3s for collector to process event..." | tee -a injector_logs.txt
           sleep 3
       - name: Verify reports contain expected entries
         run: |
@@ -79,6 +81,14 @@ jobs:
             cat reports.txt || true
             exit 1
           fi
+      - name: Upload smoke-test diagnostics (reports + injector logs)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: smoke-test-diagnostics
+          path: |
+            reports.txt
+            injector_logs.txt
       - name: Tear down
         if: always()
         run: docker compose down -v
