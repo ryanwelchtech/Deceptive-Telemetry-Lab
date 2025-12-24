@@ -22,11 +22,12 @@ For full instructions see `docs/RUN.md` and design notes in `docs/ARCHITECTURE.m
 Two helper scripts are provided to generate sample telemetry and show example reports:
 
 - PowerShell (Windows): `scripts\generate_sample_traffic.ps1` - runs multiple POSTs to the honeypot and fetches collector reports.
-  - Example: `.	emplates\bootstrap_repo.ps1` -> copy to `scripts\bootstrap_repo.ps1` and run, then:
-    - `.	ests\..` (see below) or run `.iles\..` 
   - Quick usage:
+    - `copy templates\bootstrap_repo.ps1 scripts\bootstrap_repo.ps1` (only once)
     - `.	emplates\bootstrap_repo.ps1` (or your local `scripts\bootstrap_repo.ps1`)
-    - `.	ools\generate_sample_traffic.ps1 -Count 5`
+    - `.	emplates\..` (see scripts) or run `.	emplates\..` 
+    - `.	emplates\..` 
+    - `powershell -File scripts\generate_sample_traffic.ps1 -Count 5`
 
 - Bash (macOS / Linux): `scripts/generate_sample_traffic.sh` — uses `curl` and optionally `jq` to pretty-print results.
   - Example: `bash scripts/generate_sample_traffic.sh 10`
@@ -38,6 +39,8 @@ txnvkf4d,/admin,nmap/7.80,HIGH,2025-12-24T00:59:38.747Z
 xlped3zj,/admin,nmap/7.80,HIGH,2025-12-24T01:00:19.748Z
 7uam1rqf,/admin,nmap/7.80,HIGH,2025-12-24T01:01:22.932Z
 ```
+
+A sample report is available in `docs/sample_report.csv` for reference.
 
 Notes:
 - Ensure both services are running: `docker compose up --build -d` and health checks respond (honeypot: `http://localhost:8083/health`, collector: `http://localhost:8084/health`).
