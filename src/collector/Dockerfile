@@ -8,6 +8,8 @@ WORKDIR /app
 RUN addgroup -S detel && adduser -S detel -G detel
 COPY --from=builder /app/node_modules ./node_modules
 COPY . .
+# Remove npm bundled packages to avoid shipping unnecessary vulnerable dev tooling
+RUN rm -rf /usr/local/lib/node_modules/npm || true
 RUN chown -R detel:detel /app
 USER detel
 EXPOSE 8084
