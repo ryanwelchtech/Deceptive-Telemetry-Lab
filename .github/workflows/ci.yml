@@ -81,6 +81,21 @@ jobs:
             cat reports.txt || true
             exit 1
           fi
+      - name: Print smoke-test diagnostics (reports + injector logs)
+        if: always()
+        run: |
+          echo "==== reports.txt ===="
+          if [ -f reports.txt ]; then
+            cat reports.txt || true
+          else
+            echo "(reports.txt missing)"
+          fi
+          echo "==== injector_logs.txt ===="
+          if [ -f injector_logs.txt ]; then
+            cat injector_logs.txt || true
+          else
+            echo "(injector_logs.txt missing)"
+          fi
       - name: Upload smoke-test diagnostics (reports + injector logs)
         if: always()
         uses: actions/upload-artifact@v4
