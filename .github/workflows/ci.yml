@@ -39,6 +39,10 @@ jobs:
           echo "services failed to start"; exit 1
       - name: Generate sample traffic
         run: bash scripts/generate_sample_traffic.sh 3
+      - name: Inject deterministic high-severity event
+        run: |
+          curl -s -X POST http://localhost:8083/hit -H "Content-Type: application/json" -d '{"path":"/admin","ua":"nmap/7.80"}' || true
+          sleep 1
       - name: Verify reports contain expected entries
         run: |
           RESPONSE=$(curl -s http://localhost:8084/reports || true)
