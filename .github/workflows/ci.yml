@@ -68,12 +68,13 @@ jobs:
             RESPONSE=$(curl -s http://localhost:8084/reports || true)
             echo "Attempt $i: /reports response:"
             echo "$RESPONSE" | jq -r '.[] | "id: \(.id) severity: \(.severity) path: \(.path) ua: \(.ua)"' | tee reports.txt
-            if grep -q HIGH reports.txt; then
-              echo "Found HIGH in reports"
+            # Check specifically for the injected event (path "/admin", ua contains "nmap", severity "HIGH")
+            if echo "$RESPONSE" | jq -e '.[] | select(.path=="/admin" and (.ua|test("nmap"; "i")) and .severity=="HIGH")' >/dev/null 2>&1; then
+              echo "Found expected injected HIGH event (path=/admin, ua~nmap)"
               found=0
               break
             fi
-            echo "HIGH not found yet; retry ($i/20)"
+            echo "Expected injected event not found yet; retry ($i/20)"
             sleep 2
           done
           if [ "$found" -ne 0 ]; then
