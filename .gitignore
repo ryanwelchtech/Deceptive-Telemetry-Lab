@@ -1,0 +1,14 @@
+# Node
+node_modules/
+
+# Artifacts
+artifacts/
+
+# Local PowerShell bootstrap script (store a copy locally and do not commit credentials)
+scripts/bootstrap_repo.ps1
+
+# n8n local state
+automation/n8n_data/
+
+# Environment files
+.env

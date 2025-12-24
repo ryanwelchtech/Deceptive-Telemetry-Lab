@@ -1,0 +1,19 @@
+name: CI
+on: [push, pull_request]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+      - name: Install and test collector
+        working-directory: src/collector
+        run: |
+          npm ci
+          npm test
+      - name: Lint (light)
+        run: echo "No linter configured; add ESLint in future" 

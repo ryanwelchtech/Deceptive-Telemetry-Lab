@@ -1,0 +1,14 @@
+{
+    "name": "detel-collector",
+    "version": "1.0.0",
+    "main": "index.js",
+    "dependencies": {
+        "express": "^4.18.2",
+        "body-parser": "^1.20.2",
+        "csv-writer": "^1.6.0"
+    },
+    "scripts": {
+        "start": "node index.js",
+        "test": "node tests/test_rules.js"
+    }
+}

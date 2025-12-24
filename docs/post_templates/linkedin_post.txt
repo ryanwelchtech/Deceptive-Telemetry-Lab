@@ -1,0 +1,7 @@
+Excited to share my new demo project: Deceptive Telemetry Lab — a lightweight honeypot and detection pipeline designed to simulate telemetry collection, deterministic rule evaluation, and audit-ready reporting for defense-oriented environments.
+
+Key features: simulated telemetry, deterministic detection rules (LOW/MEDIUM/HIGH), artifact generation (event logs & CSV reports), and automation templates to publish release announcements.
+
+Repo: https://github.com/ryanwelchtech/Deceptive-Telemetry-Lab
+
+Feedback welcome — open to ideas for adding parity with real scanners and SIEM integrations. #CyberSecurity #DevSecOps #ZeroTrust #Honeypot

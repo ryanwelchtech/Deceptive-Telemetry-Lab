@@ -1,0 +1,8 @@
+Project: Deceptive Telemetry Lab
+
+Summary:
+Deceptive Telemetry Lab demonstrates a repeatable pipeline for honeypot telemetry collection, deterministic rule-based detection, and artifact generation suitable for audit and remediation workflows.
+
+Features: simulated honeypot endpoints, collector with deterministic rule evaluation, CSV report generation, and templates for automation to publish project milestones.
+
+Link: https://github.com/ryanwelchtech/Deceptive-Telemetry-Lab

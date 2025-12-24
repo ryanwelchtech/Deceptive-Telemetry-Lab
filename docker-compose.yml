@@ -1,0 +1,36 @@
+version: '3.8'
+services:
+  honeypot:
+    build:
+      context: ./src/honeypot
+      dockerfile: Dockerfile
+    container_name: detel_honeypot
+    ports:
+      - "8083:8083"
+    environment:
+      - COLLECTOR_URL=http://collector:8084/ingest
+    volumes:
+      - ./artifacts:/app/artifacts
+
+  collector:
+    build:
+      context: ./src/collector
+      dockerfile: Dockerfile
+    container_name: detel_collector
+    ports:
+      - "8084:8084"
+    volumes:
+      - ./artifacts:/app/artifacts
+
+  n8n:
+    image: n8nio/n8n:latest
+    container_name: detel_n8n
+    ports:
+      - "5678:5678"
+    volumes:
+      - ./automation/n8n_data:/home/node/.n8n
+    environment:
+      - N8N_BASIC_AUTH_ACTIVE=true
+      - N8N_BASIC_AUTH_USER=ryanwelch
+      - N8N_BASIC_AUTH_PASSWORD=password123
+    restart: always
