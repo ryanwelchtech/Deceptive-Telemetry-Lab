@@ -53,14 +53,18 @@ app.get('/reports', (req, res) => {
 function evaluateSeverity(event) {
     // deterministic heuristics (example):
     const pathRisk = ['/admin', '/wp-login.php', '/phpinfo.php'].includes(event.path) ? 2 : 0;
-    const uaRisk = /scanner|nmap|nessus|curl/i.test(event.ua) ? 2 : 0;
+    let uaRisk = 0;
+    if (/scanner|nmap|nessus/i.test(event.ua)) uaRisk = 2;
+    else if (/curl/i.test(event.ua)) uaRisk = 1;
     const score = pathRisk + uaRisk;
     if (score >= 3) return 'HIGH';
     if (score === 2) return 'MEDIUM';
     return 'LOW';
 }
 
-app.listen(port, () => console.log(`Collector listening on ${port}`));
+if (require.main === module) {
+  app.listen(port, () => console.log(`Collector listening on ${port}`));
+}
 
-// Export functions for unit tests
-module.exports = { evaluateSeverity };
+// Export functions and app for unit tests
+module.exports = { evaluateSeverity, app };
